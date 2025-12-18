@@ -1,5 +1,6 @@
 from rest_framework import generics
 from rest_framework.parsers import MultiPartParser, FormParser
+from django.db import models
 
 from .models import Category, SubCategory, Product, ProductImage
 from .serializers import (
@@ -31,6 +32,7 @@ class ProductList(generics.ListAPIView):
     Query params:
     - category: category id or slug
     - subcategory: subcategory id or slug
+    - search: search term for product name or description
     """
 
     serializer_class = ProductSerializer
@@ -44,6 +46,13 @@ class ProductList(generics.ListAPIView):
 
         category = self.request.query_params.get("category")
         subcategory = self.request.query_params.get("subcategory")
+        search = self.request.query_params.get("search")
+
+        if search:
+            queryset = queryset.filter(
+                models.Q(name__icontains=search) | 
+                models.Q(description__icontains=search)
+            )
 
         if subcategory:
             if subcategory.isdigit():
@@ -58,6 +67,16 @@ class ProductList(generics.ListAPIView):
                 queryset = queryset.filter(subcategory__category__slug=category)
 
         return queryset
+    
+class ProductDetail(generics.RetrieveAPIView):
+    """Retrieve a single product with images."""
+    
+    queryset = (
+        Product.objects.select_related("subcategory", "subcategory__category")
+        .prefetch_related("images")
+        .all()
+    )
+    serializer_class = ProductSerializer
 
 
 class ProductDetail(generics.RetrieveAPIView):

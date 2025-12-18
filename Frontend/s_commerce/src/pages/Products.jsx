@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { getProducts, getCategories, getSubCategories } from '../services/api';
 import ProductCard from '../components/ProductCard';
 import './Products.css';
@@ -12,6 +13,8 @@ const Products = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [statusFilter, setStatusFilter] = useState('all');
+  const [searchParams] = useSearchParams();
+  const searchQuery = searchParams.get('search') || '';
 
   useEffect(() => {
     const fetchLookups = async () => {
@@ -38,6 +41,9 @@ const Products = () => {
         if (selectedSub !== 'all') {
           filters.subcategory = selectedSub;
         }
+        if (searchQuery) {
+          filters.search = searchQuery;
+        }
         const data = await getProducts(filters);
         setProducts(data);
         setLoading(false);
@@ -49,7 +55,7 @@ const Products = () => {
     };
 
     fetchProducts();
-  }, [selectedCategory, selectedSub]);
+  }, [selectedCategory, selectedSub, searchQuery]);
 
   useEffect(() => {
     // Reset subcategory when category changes
@@ -89,7 +95,23 @@ const Products = () => {
     <div className="products-page">
       <div className="container">
         <div className="page-header">
-          <h1 className="page-title">All Products</h1>
+          {searchQuery ? (
+            <div className="search-results-header">
+              <div className="search-icon-wrapper">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="11" cy="11" r="8"></circle>
+                  <path d="m21 21-4.35-4.35"></path>
+                </svg>
+              </div>
+              <div className="search-text-content">
+                <span className="search-label">Search Results for</span>
+                <h1 className="search-query">"{searchQuery}"</h1>
+                <span className="results-count">{filteredProducts.length} products found</span>
+              </div>
+            </div>
+          ) : (
+            <h1 className="page-title">All Products</h1>
+          )}
           <div className="filter-buttons">
             <select
               className="filter-btn"

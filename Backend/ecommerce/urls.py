@@ -4,8 +4,9 @@ from django.conf.urls.static import static
 from django.urls import path, include
 
 urlpatterns = [
-    path('admin/', admin.site.urls),             # ✅ Admin route added
-    path('api/', include('products.urls')),      # API routes
+    path('admin/', admin.site.urls),             # Admin route
+    path('api/products/', include('products.urls')),      # Product API routes
+    path('api/auth/', include('users.urls')),    # Authentication API routes
 ]
 
 # Media files for product images

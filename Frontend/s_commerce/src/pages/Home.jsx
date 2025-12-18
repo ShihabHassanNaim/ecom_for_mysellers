@@ -1,26 +1,42 @@
 import { useState, useEffect } from 'react';
-import { getProducts, getCategories } from '../services/api';
+import { getProducts, getSubCategories } from '../services/api';
 import ProductCard from '../components/ProductCard';
 import './Home.css';
 
 const Home = () => {
-  const [products, setProducts] = useState([]);
-  const [categories, setCategories] = useState([]);
+  const [subcategoryProducts, setSubcategoryProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        console.log('Fetching products and categories...');
-        const productsData = await getProducts();
-        const categoriesData = await getCategories();
+        console.log('Fetching subcategories and products...');
+        const subcategoriesData = await getSubCategories();
+        console.log('Subcategories received:', subcategoriesData);
         
-        console.log('Products received:', productsData);
-        console.log('Categories received:', categoriesData);
+        // For each subcategory, fetch products and get the first one
+        const productsPromises = subcategoriesData.map(async (subcategory) => {
+          try {
+            const productsData = await getProducts({ subcategory: subcategory.id });
+            if (productsData && productsData.length > 0) {
+              return {
+                subcategory: subcategory,
+                product: productsData[0]
+              };
+            }
+            return null;
+          } catch (err) {
+            console.error(`Error fetching products for subcategory ${subcategory.name}:`, err);
+            return null;
+          }
+        });
+
+        const results = await Promise.all(productsPromises);
+        const validResults = results.filter(item => item !== null);
         
-        setProducts(productsData.slice(0, 8));
-        setCategories(categoriesData);
+        console.log('Subcategory products:', validResults);
+        setSubcategoryProducts(validResults);
         setLoading(false);
       } catch (err) {
         console.error('Error fetching data:', err);
@@ -43,10 +59,23 @@ const Home = () => {
 
   return (
     <div className="home">
-      <section className="hero">
+      <section className="hero-banner">
         <div className="hero-content">
-          <h1 className="hero-title">Welcome to ShopHub</h1>
-          <p className="hero-subtitle">Discover amazing products at great prices</p>
+          <div className="hero-text">
+            <h1 className="hero-title">Welcome to Mohollar Dokan</h1>
+            <p className="hero-subtitle">Discover amazing products at great prices</p>
+          </div>
+          <div className="hero-graphics">
+            <div className="shopping-cart-graphic">🛒</div>
+            <div className="coin-graphic coin-1">🪙</div>
+            <div className="coin-graphic coin-2">🪙</div>
+            <div className="gift-graphic">🎁</div>
+            <div className="cube-graphic">📦</div>
+            <div className="discount-badge">
+              <span className="discount-text">50%</span>
+              <span className="off-text">OFF</span>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -59,10 +88,10 @@ const Home = () => {
 
         <section className="section">
           <h2 className="section-title">Featured Products</h2>
-          {products.length > 0 ? (
+          {subcategoryProducts.length > 0 ? (
             <div className="products-grid">
-              {products.map(product => (
-                <ProductCard key={product.id} product={product} />
+              {subcategoryProducts.map(({ subcategory, product }) => (
+                <ProductCard key={subcategory.id} product={product} />
               ))}
             </div>
           ) : (
